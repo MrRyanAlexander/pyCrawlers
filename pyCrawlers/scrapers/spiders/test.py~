@@ -1,0 +1,29 @@
+# test spider
+#
+# See documentation in:
+# http://mherman.org/blog/2012/11/05/scraping-web-pages-with-scrapy/
+
+from scrapy.contrib.spiders import CrawlSpider, Rule
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.selector import HtmlXPathSelector
+from craigslist_sample.items import CraigslistSampleItem
+
+class MySpider(CrawlSpider):
+    name = "craig2"
+    allowed_domains = ["craigslist.org"]
+    start_urls = ["http://stlouis.craigslist.org/ppa/"]   
+
+    rules = (Rule (SgmlLinkExtractor(allow=("index\d+\.html" ),restrict_xpaths=('//p[@class="nextpage"]',))
+    , callback="parse_items", follow= True),
+    )
+
+    def parse_items(self, response):
+        hxs = HtmlXPathSelector(response)
+        titles = hxs.select('//span[@class="pl"]')
+        items = []
+        for title in titles:
+            item = CraigslistSampleItem()
+            item["title"] = title.select("a/text()").extract()
+            item["link"] = title.select("a/@href").extract()
+            items.append(item)
+        return(items)
